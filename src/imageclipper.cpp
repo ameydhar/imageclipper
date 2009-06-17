@@ -31,6 +31,8 @@
 #pragma comment(lib, "highgui.lib")
 #endif
 
+#include <limits.h>
+#include <sstream>
 #include "cv.h"
 #include "cvaux.h"
 #include "cxcore.h"
@@ -95,6 +97,8 @@ void gui_usage();
 void mouse_callback( int event, int x, int y, int flags, void* _param );
 void load_reference( const ArgParam* arg, CvCallbackParam* param );
 void key_callback( const ArgParam* arg, CvCallbackParam* param );
+bool human_sort_predicate(const string& a, const string& b);
+int index(const string& a);
 
 /************************* Main **********************************************/
 
@@ -159,6 +163,33 @@ int main( int argc, char *argv[] )
 }
 
 /**
+ * sort paths like a human would
+ */
+bool human_sort_predicate(const string& a, const string& b)
+{
+  int a_num = index(a);
+  int b_num = index(b);
+  //default to sorting lexically if filenames have same number at beginning
+  return (a_num == b_num)? (a < b): (a_num < b_num);
+}
+
+int index(const string& _f_name)
+{
+	//using c++ style operations and stl functions to keep it portable
+	int ind;
+	//find the first contiguous block of decimal characters
+	string f_name = filesystem::filename(_f_name).c_str();
+	string::size_type num_start = f_name.find_first_of("0123456789");
+	string::size_type num_end = f_name.find_last_of("0123456789");
+	string f_name_index = f_name.substr(num_start, num_end - num_start + 1);
+	//convert the characters to an integer
+	////could use atoi(f_name_index) instead, this just seems more c++-esque
+	stringstream ss(f_name_index);
+	ss >> ind;
+	return ind;
+}
+
+/**
  * Read a directory or video
  */
 void load_reference( const ArgParam* arg, CvCallbackParam* param )
@@ -182,7 +213,23 @@ void load_reference( const ArgParam* arg, CvCallbackParam* param )
                 usage( arg );
                 exit(1);
             }
+            sort(param->filelist.begin(), param->filelist.end(), human_sort_predicate);
             param->fileiter = param->filelist.begin();
+
+						//get a list of files in the output directory
+            string output_path = icFormat( 
+                param->output_format, arg->reference, 
+                filesystem::filename( arg->reference ), "", 0, 0, 0, 0);
+            string output_dir = filesystem::dirname(output_path);
+            vector<string> out_filelist = filesystem::filelist(output_dir, param->imtypes, "file");
+						if(!out_filelist.empty())
+						{
+							sort(out_filelist.begin(), out_filelist.end(), human_sort_predicate);
+							int last_out_index = index(out_filelist.back());
+							//fastforward input iter to skip stuff that already has output
+							while(index(*(param->fileiter)) <= last_out_index)
+								param->fileiter++;
+						}
         }
         else
         {
