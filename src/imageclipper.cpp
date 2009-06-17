@@ -173,6 +173,10 @@ bool human_sort_predicate(const string& a, const string& b)
   return (a_num == b_num)? (a < b): (a_num < b_num);
 }
 
+/**
+ * calculate the first number in the filename string
+ * index("asdf_123_fdsa_456") //-> 123
+ */
 int index(const string& _f_name)
 {
 	//using c++ style operations and stl functions to keep it portable
@@ -183,7 +187,7 @@ int index(const string& _f_name)
 	string::size_type num_end = f_name.find_last_of("0123456789");
 	string f_name_index = f_name.substr(num_start, num_end - num_start + 1);
 	//convert the characters to an integer
-	////could use atoi(f_name_index) instead, this just seems more c++-esque
+	////could use atoi(f_name_index) instead, this just seems more c++-ish
 	stringstream ss(f_name_index);
 	ss >> ind;
 	return ind;
@@ -297,6 +301,9 @@ void key_callback( const ArgParam* arg, CvCallbackParam* param )
     cvShowImageAndRectangle( param->w_name, param->img, 
         cvRect32fFromRect( param->rect, param->rotate ), 
         cvPointTo32f( param->shear ) );
+
+		//move by a larger factor
+		int jump_factor = 10;
 
     while( true ) // key callback
     {
@@ -506,6 +513,32 @@ void key_callback( const ArgParam* arg, CvCallbackParam* param )
             else if( key == 'l' ) // Right
             {
                 param->rect.x += param->inc;
+            }
+						else if( key == 'H' ) // Left jump
+            {
+                param->rect.x -= jump_factor*(param->inc);
+            }
+            else if( key == 'J' ) // Down jump
+            {
+                param->rect.y +=  jump_factor*(param->inc);
+            }
+            else if( key == 'K' ) // Up jump
+            {
+                param->rect.y -= jump_factor*(param->inc);
+            }
+            else if( key == 'L' ) // Right jump
+            {
+                param->rect.x += jump_factor*(param->inc);
+            }
+            else if( key == 'z' ) // increase jump factor
+            {
+                jump_factor++;
+								cout << "Jump: " << jump_factor << endl;
+            }
+            else if( key == 'Z' ) // decrease jump factor
+            {
+                jump_factor--;
+								cout << "Jump: " << jump_factor << endl;
             }
             // Rectangle Resize
             else if( key == 'y' ) // Shrink width
